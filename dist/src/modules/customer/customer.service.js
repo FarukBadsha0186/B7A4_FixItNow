@@ -1,22 +1,16 @@
-
-import { Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma";
-import { IListQuery, ICreateBooking, ICreateReview } from "./customer.interface";
-
-const getPagination = (query: IListQuery) => {
+const getPagination = (query) => {
     const page = Math.max(parseInt(query.page || "1", 10) || 1, 1);
     const limit = Math.min(Math.max(parseInt(query.limit || "10", 10) || 10, 1), 100);
     const skip = (page - 1) * limit;
     return { page, limit, skip };
 };
-
 // ---------- Public browse ----------
-
-const getAllServices = async (query: IListQuery) => {
+const getAllServices = async (query) => {
     const { page, limit, skip } = getPagination(query);
-
-    const where: Record<string, unknown> = {};
-    if (query.categoryId) where.categoryId = query.categoryId;
+    const where = {};
+    if (query.categoryId)
+        where.categoryId = query.categoryId;
     if (query.minPrice || query.maxPrice) {
         where.price = {
             ...(query.minPrice ? { gte: parseFloat(query.minPrice) } : {}),
@@ -28,7 +22,6 @@ const getAllServices = async (query: IListQuery) => {
             location: { contains: query.location, mode: "insensitive" }
         };
     }
-
     const [services, total] = await Promise.all([
         prisma.service.findMany({
             where,
@@ -42,21 +35,17 @@ const getAllServices = async (query: IListQuery) => {
         }),
         prisma.service.count({ where })
     ]);
-
     return { services, meta: { total, page, limit, totalPages: Math.ceil(total / limit) || 1 } };
 };
-
-const getAllTechnicians = async (query: IListQuery) => {
+const getAllTechnicians = async (query) => {
     const { page, limit, skip } = getPagination(query);
-
-    const where: Record<string, unknown> = {};
+    const where = {};
     if (query.location) {
         where.location = { contains: query.location, mode: "insensitive" };
     }
     if (query.minRating) {
         where.avgRating = { gte: parseFloat(query.minRating) };
     }
-
     const [technicians, total] = await Promise.all([
         prisma.technicianProfile.findMany({
             where,
@@ -70,11 +59,9 @@ const getAllTechnicians = async (query: IListQuery) => {
         }),
         prisma.technicianProfile.count({ where })
     ]);
-
     return { technicians, meta: { total, page, limit, totalPages: Math.ceil(total / limit) || 1 } };
 };
-
-const getTechnicianById = async (id: string) => {
+const getTechnicianById = async (id) => {
     const technician = await prisma.technicianProfile.findUnique({
         where: { id },
         include: {
@@ -86,26 +73,20 @@ const getTechnicianById = async (id: string) => {
             }
         }
     });
-
     if (!technician) {
         throw new Error("Technician not found");
     }
-
     return technician;
 };
-
 const getAllCategories = async () => {
     return prisma.category.findMany({ orderBy: { name: "asc" } });
 };
-
 // ---------- Bookings ----------
-
-const createBooking = async (customerId: string, payload: ICreateBooking) => {
+const createBooking = async (customerId, payload) => {
     const service = await prisma.service.findUnique({ where: { id: payload.serviceId } });
     if (!service) {
         throw new Error("Service not found");
     }
-
     return prisma.booking.create({
         data: {
             customerId,
@@ -120,13 +101,11 @@ const createBooking = async (customerId: string, payload: ICreateBooking) => {
         include: { service: true }
     });
 };
-
-const getMyBookings = async (customerId: string, query: IListQuery) => {
+const getMyBookings = async (customerId, query) => {
     const { page, limit, skip } = getPagination(query);
-
-    const where: Record<string, unknown> = { customerId };
-    if (query.status) where.status = query.status;
-
+    const where = { customerId };
+    if (query.status)
+        where.status = query.status;
     const [bookings, total] = await Promise.all([
         prisma.booking.findMany({
             where,
@@ -141,11 +120,9 @@ const getMyBookings = async (customerId: string, query: IListQuery) => {
         }),
         prisma.booking.count({ where })
     ]);
-
     return { bookings, meta: { total, page, limit, totalPages: Math.ceil(total / limit) || 1 } };
 };
-
-const getBookingById = async (customerId: string, id: string) => {
+const getBookingById = async (customerId, id) => {
     const booking = await prisma.booking.findUnique({
         where: { id },
         include: {
@@ -155,18 +132,15 @@ const getBookingById = async (customerId: string, id: string) => {
             review: true
         }
     });
-
     if (!booking) {
         throw new Error("Booking not found");
     }
     if (booking.customerId !== customerId) {
         throw new Error("You do not have access to this booking");
     }
-
     return booking;
 };
-
-const cancelBooking = async (customerId: string, id: string) => {
+const cancelBooking = async (customerId, id) => {
     const booking = await prisma.booking.findUnique({ where: { id } });
     if (!booking) {
         throw new Error("Booking not found");
@@ -177,21 +151,17 @@ const cancelBooking = async (customerId: string, id: string) => {
     if (["IN_PROGRESS", "COMPLETED", "CANCELLED"].includes(booking.status)) {
         throw new Error(`Booking cannot be cancelled once it is ${booking.status}`);
     }
-
     return prisma.booking.update({
         where: { id },
         data: { status: "CANCELLED" }
     });
 };
-
 // ---------- Reviews ----------
-
-const createReview = async (customerId: string, payload: ICreateReview) => {
+const createReview = async (customerId, payload) => {
     const booking = await prisma.booking.findUnique({
         where: { id: payload.bookingId },
         include: { review: true }
     });
-
     if (!booking) {
         throw new Error("Booking not found");
     }
@@ -204,11 +174,9 @@ const createReview = async (customerId: string, payload: ICreateReview) => {
     if (booking.review) {
         throw new Error("This booking has already been reviewed");
     }
-
-    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    return prisma.$transaction(async (tx) => {
         const review = await tx.review.create({
             data: {
-
                 bookingId: booking.id,
                 customerId,
                 technicianId: booking.technicianId,
@@ -216,13 +184,11 @@ const createReview = async (customerId: string, payload: ICreateReview) => {
                 comment: payload.comment
             }
         });
-
         const agg = await tx.review.aggregate({
             where: { technicianId: booking.technicianId },
             _avg: { rating: true },
             _count: { rating: true }
         });
-
         await tx.technicianProfile.update({
             where: { id: booking.technicianId },
             data: {
@@ -230,11 +196,9 @@ const createReview = async (customerId: string, payload: ICreateReview) => {
                 totalReviews: agg._count.rating
             }
         });
-
         return review;
     });
 };
-
 export const customerService = {
     getAllServices,
     getAllTechnicians,
