@@ -1,7 +1,13 @@
-import { randomUUID } from "crypto";
-import { prisma } from "../../lib/prisma";
-import { stripe } from "../../lib/stripe";
-import config from "../../config";
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.paymentService = void 0;
+const crypto_1 = require("crypto");
+const prisma_1 = require("../../lib/prisma");
+const stripe_1 = require("../../lib/stripe");
+const config_1 = __importDefault(require("../../config"));
 const getPagination = (query) => {
     const page = Math.max(parseInt(query.page || "1", 10) || 1, 1);
     const limit = Math.min(Math.max(parseInt(query.limit || "10", 10) || 10, 1), 100);
@@ -9,7 +15,7 @@ const getPagination = (query) => {
     return { page, limit, skip };
 };
 const createPaymentSession = async (customerId, payload) => {
-    const booking = await prisma.booking.findUnique({
+    const booking = await prisma_1.prisma.booking.findUnique({
         where: { id: payload.bookingId },
         include: { service: true, payment: true }
     });
@@ -25,8 +31,8 @@ const createPaymentSession = async (customerId, payload) => {
     if (booking.payment) {
         throw new Error("A payment for this booking already exists");
     }
-    const transactionId = `TXN-${randomUUID()}`;
-    const session = await stripe.checkout.sessions.create({
+    const transactionId = `TXN-${(0, crypto_1.randomUUID)()}`;
+    const session = await stripe_1.stripe.checkout.sessions.create({
         mode: "payment",
         payment_method_types: ["card"],
         line_items: [
@@ -43,10 +49,10 @@ const createPaymentSession = async (customerId, payload) => {
             bookingId: booking.id,
             transactionId
         },
-        success_url: `${config.client_success_url}?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: config.client_cancel_url
+        success_url: `${config_1.default.client_success_url}?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: config_1.default.client_cancel_url
     });
-    const payment = await prisma.payment.create({
+    const payment = await prisma_1.prisma.payment.create({
         data: {
             bookingId: booking.id,
             transactionId,
@@ -60,25 +66,25 @@ const createPaymentSession = async (customerId, payload) => {
     return { payment, checkoutUrl: session.url };
 };
 const markPaymentCompleted = async (sessionId) => {
-    const payment = await prisma.payment.findFirst({ where: { providerRef: sessionId } });
+    const payment = await prisma_1.prisma.payment.findFirst({ where: { providerRef: sessionId } });
     if (!payment || payment.status === "COMPLETED")
         return;
-    await prisma.$transaction([
-        prisma.payment.update({
+    await prisma_1.prisma.$transaction([
+        prisma_1.prisma.payment.update({
             where: { id: payment.id },
             data: { status: "COMPLETED", paidAt: new Date() }
         }),
-        prisma.booking.update({
+        prisma_1.prisma.booking.update({
             where: { id: payment.bookingId },
             data: { status: "PAID" }
         })
     ]);
 };
 const markPaymentFailed = async (sessionId) => {
-    const payment = await prisma.payment.findFirst({ where: { providerRef: sessionId } });
+    const payment = await prisma_1.prisma.payment.findFirst({ where: { providerRef: sessionId } });
     if (!payment)
         return;
-    await prisma.payment.update({
+    await prisma_1.prisma.payment.update({
         where: { id: payment.id },
         data: { status: "FAILED" }
     });
@@ -86,7 +92,7 @@ const markPaymentFailed = async (sessionId) => {
 const handleStripeWebhook = async (rawBody, signature) => {
     let event;
     try {
-        event = stripe.webhooks.constructEvent(rawBody, signature, config.stripe_webhook_secret);
+        event = stripe_1.stripe.webhooks.constructEvent(rawBody, signature, config_1.default.stripe_webhook_secret);
     }
     catch (err) {
         throw new Error("Invalid Stripe webhook signature");
@@ -111,19 +117,19 @@ const getMyPayments = async (customerId, query) => {
     const { page, limit, skip } = getPagination(query);
     const where = { booking: { customerId } };
     const [payments, total] = await Promise.all([
-        prisma.payment.findMany({
+        prisma_1.prisma.payment.findMany({
             where,
             include: { booking: { include: { service: true } } },
             skip,
             take: limit,
             orderBy: { createdAt: "desc" }
         }),
-        prisma.payment.count({ where })
+        prisma_1.prisma.payment.count({ where })
     ]);
     return { payments, meta: { total, page, limit, totalPages: Math.ceil(total / limit) || 1 } };
 };
 const getPaymentById = async (customerId, id, role) => {
-    const payment = await prisma.payment.findUnique({
+    const payment = await prisma_1.prisma.payment.findUnique({
         where: { id },
         include: { booking: true }
     });
@@ -135,7 +141,7 @@ const getPaymentById = async (customerId, id, role) => {
     }
     return payment;
 };
-export const paymentService = {
+exports.paymentService = {
     createPaymentSession,
     handleStripeWebhook,
     getMyPayments,

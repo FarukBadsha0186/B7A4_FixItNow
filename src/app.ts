@@ -3,7 +3,7 @@
 import express, { Application, Request, Response } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import config from "./config";
+import config from "./config/index";
 import { authRoutes } from "./modules/auth/auth.routes";
 import { adminRoutes } from "./modules/admin/admin.routes";
 import { technicianRoutes } from "./modules/technician/technician.routes";

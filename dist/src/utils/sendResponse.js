@@ -1,5 +1,8 @@
+"use strict";
 // import { Response } from "express";
-export const sendResponse = (res, payload) => {
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.sendResponse = void 0;
+const sendResponse = (res, payload) => {
     return res.status(payload.statusCode).json({
         success: payload.success,
         message: payload.message,
@@ -7,3 +10,4 @@ export const sendResponse = (res, payload) => {
         ...(payload.meta ? { meta: payload.meta } : {})
     });
 };
+exports.sendResponse = sendResponse;

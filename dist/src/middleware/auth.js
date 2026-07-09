@@ -1,3 +1,4 @@
+"use strict";
 // // middleware/auth.ts
 // import { NextFunction, Request, Response } from "express";
 // import { JwtPayload } from "jsonwebtoken";
@@ -6,13 +7,18 @@
 // import catchAsync from "../utils/catchAsync";
 // import { jwtUtils } from "../utils/jwt";
 // import { Role, UserStatus } from "../../generated/prisma/enums";
-import config from "../config";
-import { prisma } from "../lib/prisma";
-import { catchAsync } from "../utils/catchAsync";
-import { jwtUtils } from "../utils/jwt";
-import { UserStatus } from "@prisma/client";
-export const auth = (...requiredRoles) => {
-    return catchAsync(async (req, res, next) => {
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.auth = void 0;
+const config_1 = __importDefault(require("../config"));
+const prisma_1 = require("../lib/prisma");
+const catchAsync_1 = require("../utils/catchAsync");
+const jwt_1 = require("../utils/jwt");
+const client_1 = require("@prisma/client");
+const auth = (...requiredRoles) => {
+    return (0, catchAsync_1.catchAsync)(async (req, res, next) => {
         let token = req.cookies?.accessToken;
         if (!token && req.headers.authorization) {
             token = req.headers.authorization.startsWith("Bearer ")
@@ -26,7 +32,7 @@ export const auth = (...requiredRoles) => {
                 errorDetails: null
             });
         }
-        const verificationResult = jwtUtils.verifyToken(token, config.jwt_access_secret);
+        const verificationResult = jwt_1.jwtUtils.verifyToken(token, config_1.default.jwt_access_secret);
         if (!verificationResult.success) {
             return res.status(401).json({
                 success: false,
@@ -42,7 +48,7 @@ export const auth = (...requiredRoles) => {
                 errorDetails: null
             });
         }
-        const user = await prisma.user.findUnique({
+        const user = await prisma_1.prisma.user.findUnique({
             where: { id: userData.id },
             select: { id: true, email: true, name: true, role: true, status: true }
         });
@@ -53,7 +59,7 @@ export const auth = (...requiredRoles) => {
                 errorDetails: null
             });
         }
-        if (user.status === UserStatus.BANNED) {
+        if (user.status === client_1.UserStatus.BANNED) {
             return res.status(403).json({
                 success: false,
                 message: "Your account has been banned. Please contact support.",
@@ -77,3 +83,4 @@ export const auth = (...requiredRoles) => {
         next();
     });
 };
+exports.auth = auth;

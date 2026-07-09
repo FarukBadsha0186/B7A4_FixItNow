@@ -1,5 +1,10 @@
+"use strict";
 // // import app from "./app";
 // // import { config } from "./config";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
 // // import { prisma } from "./lib/prisma";
 // // import "dotenv/config";
 // // const PORT = config.PORT;
@@ -41,21 +46,21 @@
 // app.listen(PORT, () => {
 //     console.log(`Server is running on port ${PORT}`);
 // });
-import app from "./app";
-import config from "./config";
-import { prisma } from "./lib/prisma";
-const PORT = config.port;
+const app_1 = __importDefault(require("./app"));
+const config_1 = __importDefault(require("./config"));
+const prisma_1 = require("./lib/prisma");
+const PORT = config_1.default.port;
 async function main() {
     try {
-        await prisma.$connect();
+        await prisma_1.prisma.$connect();
         console.log("Connected to database successfully");
-        app.listen(PORT, () => {
+        app_1.default.listen(PORT, () => {
             console.log(`Server is running on port ${PORT}`);
         });
     }
     catch (error) {
         console.log("Error starting server:", error);
-        await prisma.$disconnect();
+        await prisma_1.prisma.$disconnect();
         process.exit(1);
     }
 }

@@ -1,5 +1,11 @@
+"use strict";
 // // src/utils/jwt.ts
 // import jwt, { JwtPayload, SignOptions } from "jsonwebtoken";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.jwtUtils = void 0;
 // export const jwtUtils = {
 //     generateToken: (payload: object, secret: string, expiresIn: string = "7d"): string => {
 //         try {
@@ -46,13 +52,13 @@
 //         }
 //     }
 // };
-import jwt from "jsonwebtoken";
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const createToken = (payload, secret, expiresIn) => {
-    return jwt.sign(payload, secret, { expiresIn });
+    return jsonwebtoken_1.default.sign(payload, secret, { expiresIn });
 };
 const verifyToken = (token, secret) => {
     try {
-        const data = jwt.verify(token, secret);
+        const data = jsonwebtoken_1.default.verify(token, secret);
         return { success: true, data };
     }
     catch (error) {
@@ -63,9 +69,9 @@ const verifyToken = (token, secret) => {
     }
 };
 const decodeToken = (token) => {
-    return jwt.decode(token);
+    return jsonwebtoken_1.default.decode(token);
 };
-export const jwtUtils = {
+exports.jwtUtils = {
     createToken,
     verifyToken,
     decodeToken

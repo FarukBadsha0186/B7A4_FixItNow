@@ -1,6 +1,11 @@
-import Stripe from "stripe";
-import config from "../config";
-
-export const stripe = new Stripe(config.stripe_secret_key || "sk_test_placeholder", {
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.stripe = void 0;
+const stripe_1 = __importDefault(require("stripe"));
+const config_1 = __importDefault(require("../config"));
+exports.stripe = new stripe_1.default(config_1.default.stripe_secret_key, {
     apiVersion: "2026-06-24.dahlia"
 });

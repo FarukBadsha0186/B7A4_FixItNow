@@ -1,4 +1,7 @@
-import { prisma } from "../../lib/prisma";
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.technicianService = void 0;
+const prisma_1 = require("../../lib/prisma");
 const getPagination = (query) => {
     const page = Math.max(parseInt(query.page || "1", 10) || 1, 1);
     const limit = Math.min(Math.max(parseInt(query.limit || "10", 10) || 10, 1), 100);
@@ -6,7 +9,7 @@ const getPagination = (query) => {
     return { page, limit, skip };
 };
 const getProfileOrThrow = async (userId) => {
-    const User = await prisma.technicianProfile.findUnique({ where: { userId } });
+    const User = await prisma_1.prisma.technicianProfile.findUnique({ where: { userId } });
     if (!User) {
         throw new Error("Technician profile not found");
     }
@@ -14,28 +17,28 @@ const getProfileOrThrow = async (userId) => {
 };
 const updateProfile = async (userId, payload) => {
     const profile = await getProfileOrThrow(userId);
-    return prisma.technicianProfile.update({
+    return prisma_1.prisma.technicianProfile.update({
         where: { id: profile.id },
         data: payload
     });
 };
 const updateAvailability = async (userId, payload) => {
     const profile = await getProfileOrThrow(userId);
-    await prisma.$transaction([
-        prisma.availability.deleteMany({ where: { technicianId: profile.id } }),
-        prisma.availability.createMany({
+    await prisma_1.prisma.$transaction([
+        prisma_1.prisma.availability.deleteMany({ where: { technicianId: profile.id } }),
+        prisma_1.prisma.availability.createMany({
             data: payload.slots.map((slot) => ({ ...slot, technicianId: profile.id }))
         })
     ]);
-    return prisma.availability.findMany({ where: { technicianId: profile.id } });
+    return prisma_1.prisma.availability.findMany({ where: { technicianId: profile.id } });
 };
 const createService = async (userId, payload) => {
     const profile = await getProfileOrThrow(userId);
-    const category = await prisma.category.findUnique({ where: { id: payload.categoryId } });
+    const category = await prisma_1.prisma.category.findUnique({ where: { id: payload.categoryId } });
     if (!category) {
         throw new Error("Category does not exist");
     }
-    return prisma.service.create({
+    return prisma_1.prisma.service.create({
         data: { ...payload, technicianId: profile.id }
     });
 };
@@ -46,7 +49,7 @@ const getMyBookings = async (userId, query) => {
     if (query.status)
         where.status = query.status;
     const [bookings, total] = await Promise.all([
-        prisma.booking.findMany({
+        prisma_1.prisma.booking.findMany({
             where,
             include: {
                 customer: { select: { id: true, name: true, email: true } },
@@ -56,7 +59,7 @@ const getMyBookings = async (userId, query) => {
             take: limit,
             orderBy: { createdAt: "desc" }
         }),
-        prisma.booking.count({ where })
+        prisma_1.prisma.booking.count({ where })
     ]);
     return {
         bookings,
@@ -70,7 +73,7 @@ const VALID_TRANSITIONS = {
 };
 const updateBookingStatus = async (userId, bookingId, status) => {
     const profile = await getProfileOrThrow(userId);
-    const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
+    const booking = await prisma_1.prisma.booking.findUnique({ where: { id: bookingId } });
     if (!booking) {
         throw new Error("Booking not found");
     }
@@ -81,12 +84,12 @@ const updateBookingStatus = async (userId, bookingId, status) => {
     if (!allowedNext.includes(status)) {
         throw new Error(`Cannot transition booking from ${booking.status} to ${status}. A booking must be PAID before it can move to IN_PROGRESS.`);
     }
-    return prisma.booking.update({
+    return prisma_1.prisma.booking.update({
         where: { id: bookingId },
         data: { status: status }
     });
 };
-export const technicianService = {
+exports.technicianService = {
     updateProfile,
     updateAvailability,
     createService,

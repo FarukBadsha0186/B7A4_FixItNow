@@ -1,17 +1,20 @@
-import { Router } from "express";
-import { customerController } from "./customer.controller";
-import { auth } from "../../middleware/auth";
-import { Role } from "@prisma/client";
-const router = Router();
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.customerRoutes = void 0;
+const express_1 = require("express");
+const customer_controller_1 = require("./customer.controller");
+const auth_1 = require("../../middleware/auth");
+const client_1 = require("@prisma/client");
+const router = (0, express_1.Router)();
 // ---------- Public routes (no auth required) ----------
-router.get("/services", customerController.getAllServices);
-router.get("/technicians", customerController.getAllTechnicians);
-router.get("/technicians/:id", customerController.getTechnicianById);
-router.get("/categories", customerController.getAllCategories);
+router.get("/services", customer_controller_1.customerController.getAllServices);
+router.get("/technicians", customer_controller_1.customerController.getAllTechnicians);
+router.get("/technicians/:id", customer_controller_1.customerController.getTechnicianById);
+router.get("/categories", customer_controller_1.customerController.getAllCategories);
 // ---------- Protected routes (CUSTOMER only) ----------
-router.post("/bookings", auth(Role.CUSTOMER), customerController.createBooking);
-router.get("/bookings", auth(Role.CUSTOMER), customerController.getMyBookings);
-router.get("/bookings/:id", auth(Role.CUSTOMER), customerController.getBookingById);
-router.patch("/bookings/:id/cancel", auth(Role.CUSTOMER), customerController.cancelBooking);
-router.post("/reviews", auth(Role.CUSTOMER), customerController.createReview);
-export const customerRoutes = router;
+router.post("/bookings", (0, auth_1.auth)(client_1.Role.CUSTOMER), customer_controller_1.customerController.createBooking);
+router.get("/bookings", (0, auth_1.auth)(client_1.Role.CUSTOMER), customer_controller_1.customerController.getMyBookings);
+router.get("/bookings/:id", (0, auth_1.auth)(client_1.Role.CUSTOMER), customer_controller_1.customerController.getBookingById);
+router.patch("/bookings/:id/cancel", (0, auth_1.auth)(client_1.Role.CUSTOMER), customer_controller_1.customerController.cancelBooking);
+router.post("/reviews", (0, auth_1.auth)(client_1.Role.CUSTOMER), customer_controller_1.customerController.createReview);
+exports.customerRoutes = router;

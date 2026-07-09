@@ -1,4 +1,7 @@
-import { prisma } from "../../lib/prisma";
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.customerService = void 0;
+const prisma_1 = require("../../lib/prisma");
 const getPagination = (query) => {
     const page = Math.max(parseInt(query.page || "1", 10) || 1, 1);
     const limit = Math.min(Math.max(parseInt(query.limit || "10", 10) || 10, 1), 100);
@@ -23,7 +26,7 @@ const getAllServices = async (query) => {
         };
     }
     const [services, total] = await Promise.all([
-        prisma.service.findMany({
+        prisma_1.prisma.service.findMany({
             where,
             include: {
                 category: true,
@@ -33,7 +36,7 @@ const getAllServices = async (query) => {
             take: limit,
             orderBy: { createdAt: "desc" }
         }),
-        prisma.service.count({ where })
+        prisma_1.prisma.service.count({ where })
     ]);
     return { services, meta: { total, page, limit, totalPages: Math.ceil(total / limit) || 1 } };
 };
@@ -47,7 +50,7 @@ const getAllTechnicians = async (query) => {
         where.avgRating = { gte: parseFloat(query.minRating) };
     }
     const [technicians, total] = await Promise.all([
-        prisma.technicianProfile.findMany({
+        prisma_1.prisma.technicianProfile.findMany({
             where,
             include: {
                 user: { select: { id: true, name: true, email: true } },
@@ -57,12 +60,12 @@ const getAllTechnicians = async (query) => {
             take: limit,
             orderBy: { avgRating: "desc" }
         }),
-        prisma.technicianProfile.count({ where })
+        prisma_1.prisma.technicianProfile.count({ where })
     ]);
     return { technicians, meta: { total, page, limit, totalPages: Math.ceil(total / limit) || 1 } };
 };
 const getTechnicianById = async (id) => {
-    const technician = await prisma.technicianProfile.findUnique({
+    const technician = await prisma_1.prisma.technicianProfile.findUnique({
         where: { id },
         include: {
             user: { select: { id: true, name: true, email: true } },
@@ -79,15 +82,15 @@ const getTechnicianById = async (id) => {
     return technician;
 };
 const getAllCategories = async () => {
-    return prisma.category.findMany({ orderBy: { name: "asc" } });
+    return prisma_1.prisma.category.findMany({ orderBy: { name: "asc" } });
 };
 // ---------- Bookings ----------
 const createBooking = async (customerId, payload) => {
-    const service = await prisma.service.findUnique({ where: { id: payload.serviceId } });
+    const service = await prisma_1.prisma.service.findUnique({ where: { id: payload.serviceId } });
     if (!service) {
         throw new Error("Service not found");
     }
-    return prisma.booking.create({
+    return prisma_1.prisma.booking.create({
         data: {
             customerId,
             technicianId: service.technicianId,
@@ -107,7 +110,7 @@ const getMyBookings = async (customerId, query) => {
     if (query.status)
         where.status = query.status;
     const [bookings, total] = await Promise.all([
-        prisma.booking.findMany({
+        prisma_1.prisma.booking.findMany({
             where,
             include: {
                 service: true,
@@ -118,12 +121,12 @@ const getMyBookings = async (customerId, query) => {
             take: limit,
             orderBy: { createdAt: "desc" }
         }),
-        prisma.booking.count({ where })
+        prisma_1.prisma.booking.count({ where })
     ]);
     return { bookings, meta: { total, page, limit, totalPages: Math.ceil(total / limit) || 1 } };
 };
 const getBookingById = async (customerId, id) => {
-    const booking = await prisma.booking.findUnique({
+    const booking = await prisma_1.prisma.booking.findUnique({
         where: { id },
         include: {
             service: true,
@@ -141,7 +144,7 @@ const getBookingById = async (customerId, id) => {
     return booking;
 };
 const cancelBooking = async (customerId, id) => {
-    const booking = await prisma.booking.findUnique({ where: { id } });
+    const booking = await prisma_1.prisma.booking.findUnique({ where: { id } });
     if (!booking) {
         throw new Error("Booking not found");
     }
@@ -151,14 +154,14 @@ const cancelBooking = async (customerId, id) => {
     if (["IN_PROGRESS", "COMPLETED", "CANCELLED"].includes(booking.status)) {
         throw new Error(`Booking cannot be cancelled once it is ${booking.status}`);
     }
-    return prisma.booking.update({
+    return prisma_1.prisma.booking.update({
         where: { id },
         data: { status: "CANCELLED" }
     });
 };
 // ---------- Reviews ----------
 const createReview = async (customerId, payload) => {
-    const booking = await prisma.booking.findUnique({
+    const booking = await prisma_1.prisma.booking.findUnique({
         where: { id: payload.bookingId },
         include: { review: true }
     });
@@ -174,7 +177,7 @@ const createReview = async (customerId, payload) => {
     if (booking.review) {
         throw new Error("This booking has already been reviewed");
     }
-    return prisma.$transaction(async (tx) => {
+    return prisma_1.prisma.$transaction(async (tx) => {
         const review = await tx.review.create({
             data: {
                 bookingId: booking.id,
@@ -199,7 +202,7 @@ const createReview = async (customerId, payload) => {
         return review;
     });
 };
-export const customerService = {
+exports.customerService = {
     getAllServices,
     getAllTechnicians,
     getTechnicianById,
