@@ -1,0 +1,16 @@
+import { Router } from "express";
+import { adminController } from "./admin.controller";
+import { auth } from "../../middleware/auth";
+import { Role } from "@prisma/client";
+
+const router = Router();
+
+router.use(auth(Role.ADMIN));
+
+router.get("/users", adminController.getAllUsers);
+router.get("/users/:id", adminController.updateUserStatus);
+router.get("/bookings", adminController.getAllBookings);
+router.get("/categories", adminController.getAllCategories);
+router.post("/categories", adminController.createCategory);
+
+export const adminRoutes = router;
