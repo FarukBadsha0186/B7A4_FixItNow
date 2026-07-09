@@ -3,7 +3,7 @@ import Stripe from "stripe";
 import { prisma } from "../../lib/prisma";
 import { stripe } from "../../lib/stripe";
 import config from "../../config";
-import { ICreatePayment, IListQuery } from "./payment.interface";
+import { ICreatePayment, IConfirmPayment, IListQuery } from "./payment.interface";
 
 const getPagination = (query: IListQuery) => {
     const page = Math.max(parseInt(query.page || "1", 10) || 1, 1);
@@ -68,14 +68,14 @@ const createPaymentSession = async (customerId: string, payload: ICreatePayment)
         }
     });
 
-    return { payment, checkoutUrl: session.url };
+    return { payment, checkoutUrl: session.url, sessionId: session.id };
 };
 
 const markPaymentCompleted = async (sessionId: string) => {
     const payment = await prisma.payment.findFirst({ where: { providerRef: sessionId } });
-    if (!payment || payment.status === "COMPLETED") return;
+    if (!payment || payment.status === "COMPLETED") return payment;
 
-    await prisma.$transaction([
+    const [updatedPayment] = await prisma.$transaction([
         prisma.payment.update({
             where: { id: payment.id },
             data: { status: "COMPLETED", paidAt: new Date() }
@@ -85,6 +85,8 @@ const markPaymentCompleted = async (sessionId: string) => {
             data: { status: "PAID" }
         })
     ]);
+
+    return updatedPayment;
 };
 
 const markPaymentFailed = async (sessionId: string) => {
@@ -97,6 +99,7 @@ const markPaymentFailed = async (sessionId: string) => {
     });
 };
 
+// POST /api/payments/webhook — automatic, called by Stripe itself
 const handleStripeWebhook = async (rawBody: Buffer, signature: string) => {
     let event: Stripe.Event;
     try {
@@ -123,9 +126,38 @@ const handleStripeWebhook = async (rawBody: Buffer, signature: string) => {
     return { received: true };
 };
 
+// POST /api/payments/confirm — manual fallback, called by the client after redirect
+const confirmPayment = async (customerId: string, payload: IConfirmPayment) => {
+    const { sessionId } = payload;
+
+    const payment = await prisma.payment.findFirst({
+        where: { providerRef: sessionId },
+        include: { booking: true }
+    });
+
+    if (!payment) {
+        throw new Error("Payment not found for this session");
+    }
+    if (payment.booking.customerId !== customerId) {
+        throw new Error("You do not have access to this payment");
+    }
+
+    if (payment.status === "COMPLETED") {
+        return payment;
+    }
+
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+    if (session.payment_status === "paid") {
+        const updated = await markPaymentCompleted(sessionId);
+        return updated;
+    }
+
+    throw new Error(`Payment has not been completed yet. Status: ${session.payment_status}`);
+};
+
 const getMyPayments = async (customerId: string, query: IListQuery) => {
     const { page, limit, skip } = getPagination(query);
-
     const where = { booking: { customerId } };
 
     const [payments, total] = await Promise.all([
@@ -161,6 +193,7 @@ const getPaymentById = async (customerId: string, id: string, role: string) => {
 export const paymentService = {
     createPaymentSession,
     handleStripeWebhook,
+    confirmPayment,
     getMyPayments,
     getPaymentById
 };
