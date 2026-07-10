@@ -34,10 +34,10 @@ app.use("/api/auth", authRoutes);
  app.use("/api/admin", adminRoutes);
  app.use("/api/technician", technicianRoutes);
  app.use("/api/customer", customerRoutes);
-// app.use("/api", serviceRoutes);
-// app.use("/api/bookings", bookingRoutes);
+ app.use("/api", customerRoutes);
+ app.use("/api/bookings", customerRoutes);
  app.use("/api/payments", paymentRoutes);
-// app.use("/api/reviews", reviewRoutes);
+ app.use("/api/reviews", customerRoutes);
 
 // 404 handler
 app.use((req: Request, res: Response) => {
