@@ -12,6 +12,7 @@ import { Role, UserStatus } from "@prisma/client";
 const registerUser = async (payload: IRegisterUser) => {
     const { name, email, password, phone, role = Role.CUSTOMER } = payload;
 
+
     if (role === Role.ADMIN) {
         throw new Error("Cannot register as ADMIN");
     }
@@ -78,7 +79,7 @@ const loginUser = async (payload: ILoginUser) => {
         config.jwt_refresh_expires_in
     );
 
-    return { accessToken, refreshToken };
+    return { accessToken, refreshToken ,role: user.role};
 };
 
 const refreshToken = async (token: string) => {

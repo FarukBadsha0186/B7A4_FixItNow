@@ -100,8 +100,44 @@ const getAllCategories = async () => {
 
 // ---------- Bookings ----------
 
+// const createBooking = async (customerId: string, payload: ICreateBooking) => {
+//     const service = await prisma.service.findUnique({ where: { id: payload.serviceId } });
+
+//     if (!service) {
+//         throw new Error("Service not found");
+//     }
+
+//     return prisma.booking.create({
+//         data: {
+//             customerId,
+//             technicianId: service.technicianId,
+//             serviceId: service.id,
+//             scheduledAt: new Date(payload.scheduledAt),
+//             address: payload.address,
+//             notes: payload.notes,
+//             totalAmount: service.price,
+//             status: "REQUESTED"
+//         },
+//         include: { service: true }
+//     });
+// };
 const createBooking = async (customerId: string, payload: ICreateBooking) => {
+    // Input validation
+    if (!payload.serviceId || typeof payload.serviceId !== "string") {
+        throw new Error("serviceId is required");
+    }
+    if (!payload.scheduledAt || isNaN(Date.parse(payload.scheduledAt))) {
+        throw new Error("scheduledAt must be a valid date");
+    }
+    if (new Date(payload.scheduledAt) < new Date()) {
+        throw new Error("scheduledAt must be a future date");
+    }
+    if (!payload.address || payload.address.trim().length < 5) {
+        throw new Error("address is required and must be at least 5 characters");
+    }
+
     const service = await prisma.service.findUnique({ where: { id: payload.serviceId } });
+
     if (!service) {
         throw new Error("Service not found");
     }
@@ -120,6 +156,7 @@ const createBooking = async (customerId: string, payload: ICreateBooking) => {
         include: { service: true }
     });
 };
+
 
 const getMyBookings = async (customerId: string, query: IListQuery) => {
     const { page, limit, skip } = getPagination(query);
@@ -186,7 +223,69 @@ const cancelBooking = async (customerId: string, id: string) => {
 
 // ---------- Reviews ----------
 
+// const createReview = async (customerId: string, payload: ICreateReview) => {
+//     const booking = await prisma.booking.findUnique({
+//         where: { id: payload.bookingId },
+//         include: { review: true }
+//     });
+
+//     if (!booking) {
+//         throw new Error("Booking not found");
+//     }
+//     if (booking.customerId !== customerId) {
+//         throw new Error("You can only review your own bookings");
+//     }
+//     if (booking.status !== "COMPLETED") {
+//         throw new Error("You can only review a completed job");
+//     }
+//     if (booking.review) {
+//         throw new Error("This booking has already been reviewed");
+//     }
+
+//     return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+//         const review = await tx.review.create({
+//             data: {
+
+//                 bookingId: booking.id,
+//                 customerId,
+//                 technicianId: booking.technicianId,
+//                 rating: payload.rating,
+//                 comment: payload.comment
+//             }
+//         });
+
+//         const agg = await tx.review.aggregate({
+//             where: { technicianId: booking.technicianId },
+//             _avg: { rating: true },
+//             _count: { rating: true }
+//         });
+
+//         await tx.technicianProfile.update({
+//             where: { id: booking.technicianId },
+//             data: {
+//                 avgRating: agg._avg.rating ?? payload.rating,
+//                 totalReviews: agg._count.rating
+//             }
+//         });
+
+//         return review;
+//     });
+// };
+
 const createReview = async (customerId: string, payload: ICreateReview) => {
+    // Input validation
+    if (!payload.bookingId || typeof payload.bookingId !== "string") {
+        throw new Error("bookingId is required");
+    }
+    if (
+        payload.rating === undefined ||
+        typeof payload.rating !== "number" ||
+        payload.rating < 1 ||
+        payload.rating > 5
+    ) {
+        throw new Error("rating is required and must be a number between 1 and 5");
+    }
+
     const booking = await prisma.booking.findUnique({
         where: { id: payload.bookingId },
         include: { review: true }
@@ -208,7 +307,6 @@ const createReview = async (customerId: string, payload: ICreateReview) => {
     return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         const review = await tx.review.create({
             data: {
-
                 bookingId: booking.id,
                 customerId,
                 technicianId: booking.technicianId,
@@ -234,6 +332,7 @@ const createReview = async (customerId: string, payload: ICreateReview) => {
         return review;
     });
 };
+
 
 export const customerService = {
     getAllServices,

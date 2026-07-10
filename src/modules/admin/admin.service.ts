@@ -36,26 +36,26 @@ const getAllUsers = async (query: IListQuery) => {
     };
 };
 
-const updateUserStatus = async (id: string, payload: IUpdateUserStatus) => {
-    const user = await prisma.user.findUnique({ where: { id } });
-    if (!user) {
-        throw new Error("User not found");
-    }
-    if (user.role === Role.ADMIN) {
-        throw new Error("Cannot change status of an admin account");
-    }
+// const updateUserStatus = async (id: string, payload: IUpdateUserStatus) => {
+//     const user = await prisma.user.findUnique({ where: { id } });
+//     if (!user) {
+//         throw new Error("User not found");
+//     }
+//     if (user.role === Role.ADMIN) {
+//         throw new Error("Cannot change status of an admin account");
+//     }
 
-    const updatedUser = await prisma.user.update({
-        where: { id },
-        data: { status: payload.status },
-        select: {
-            id: true, name: true, email: true, phone: true,
-            role: true, status: true, createdAt: true, updatedAt: true
-        }
-    });
+//     const updatedUser = await prisma.user.update({
+//         where: { id },
+//         data: { status: payload.status },
+//         select: {
+//             id: true, name: true, email: true, phone: true,
+//             role: true, status: true, createdAt: true, updatedAt: true
+//         }
+//     });
 
-    return updatedUser;
-};
+//     return updatedUser;
+// };
 
 const getAllBookings = async (query: IListQuery) => {
     const { page, limit, skip } = getPagination(query);
@@ -89,7 +89,48 @@ const getAllCategories = async () => {
     return prisma.category.findMany({ orderBy: { name: "asc" } });
 };
 
+// const createCategory = async (payload: ICreateCategory) => {
+//     const existing = await prisma.category.findUnique({ where: { name: payload.name } });
+//     if (existing) {
+//         throw new Error("A category with this name already exists");
+//     }
+
+//     return prisma.category.create({ data: payload });
+// };
+
+const updateUserStatus = async (id: string, payload: IUpdateUserStatus) => {
+    // Input validation
+    const VALID_STATUSES = ["ACTIVE", "BANNED"];
+    if (!payload.status || !VALID_STATUSES.includes(payload.status)) {
+        throw new Error(`status must be one of: ${VALID_STATUSES.join(", ")}`);
+    }
+
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) {
+        throw new Error("User not found");
+    }
+    if (user.role === Role.ADMIN) {
+        throw new Error("Cannot change status of an admin account");
+    }
+
+    const updatedUser = await prisma.user.update({
+        where: { id },
+        data: { status: payload.status },
+        select: {
+            id: true, name: true, email: true, phone: true,
+            role: true, status: true, createdAt: true, updatedAt: true
+        }
+    });
+
+    return updatedUser;
+};
+
 const createCategory = async (payload: ICreateCategory) => {
+    // Input validation
+    if (!payload.name || payload.name.trim().length < 2) {
+        throw new Error("name is required and must be at least 2 characters");
+    }
+
     const existing = await prisma.category.findUnique({ where: { name: payload.name } });
     if (existing) {
         throw new Error("A category with this name already exists");
