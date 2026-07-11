@@ -6,10 +6,24 @@ import { jwtUtils } from "../../utils/jwt";
 import config from "../../config";
 import { Role, UserStatus } from "@prisma/client";
 
+
+
 const registerUser = async (payload: IRegisterUser) => {
     const { name, email, password, phone, role = Role.CUSTOMER } = payload;
 
-
+    // Input validation
+    if (!name || typeof name !== "string" || name.trim().length < 2) {
+        throw new Error("Name is required and must be at least 2 characters");
+    }
+    if (!email || typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        throw new Error("A valid email is required");
+    }
+    if (!password || typeof password !== "string" || password.length < 6) {
+        throw new Error("Password is required and must be at least 6 characters");
+    }
+    if (role && !["CUSTOMER", "TECHNICIAN", "ADMIN"].includes(role)) {
+        throw new Error("role must be one of: CUSTOMER, TECHNICIAN");
+    }
     if (role === Role.ADMIN) {
         throw new Error("Cannot register as ADMIN");
     }
@@ -20,7 +34,6 @@ const registerUser = async (payload: IRegisterUser) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
     const user = await prisma.user.create({
         data: {
             name,
@@ -42,7 +55,6 @@ const registerUser = async (payload: IRegisterUser) => {
 
     return user;
 };
-
 const loginUser = async (payload: ILoginUser) => {
     const { email, password } = payload;
 
