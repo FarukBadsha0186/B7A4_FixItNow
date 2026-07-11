@@ -10,23 +10,35 @@ const getPagination = (query: IListQuery) => {
     return { page, limit, skip };
 };
 
-// ---------- Public browse ----------
+//  Public browse 
+
 
 const getAllServices = async (query: IListQuery) => {
     const { page, limit, skip } = getPagination(query);
 
     const where: Record<string, unknown> = {};
+
+    // "type" filter — maps to categoryId (category IS the service type: plumbing, electrical, etc.)
     if (query.categoryId) where.categoryId = query.categoryId;
+
     if (query.minPrice || query.maxPrice) {
         where.price = {
             ...(query.minPrice ? { gte: parseFloat(query.minPrice) } : {}),
             ...(query.maxPrice ? { lte: parseFloat(query.maxPrice) } : {})
         };
     }
+
+    // "location" filter — via the technician offering the service
+    // "rating" filter — via the technician's average rating
+    const technicianFilter: Record<string, unknown> = {};
     if (query.location) {
-        where.technician = {
-            location: { contains: query.location, mode: "insensitive" }
-        };
+        technicianFilter.location = { contains: query.location, mode: "insensitive" };
+    }
+    if (query.minRating) {
+        technicianFilter.avgRating = { gte: parseFloat(query.minRating) };
+    }
+    if (Object.keys(technicianFilter).length > 0) {
+        where.technician = technicianFilter;
     }
 
     const [services, total] = await Promise.all([
@@ -98,29 +110,9 @@ const getAllCategories = async () => {
     return prisma.category.findMany({ orderBy: { name: "asc" } });
 };
 
-// ---------- Bookings ----------
+//  Bookings 
 
-// const createBooking = async (customerId: string, payload: ICreateBooking) => {
-//     const service = await prisma.service.findUnique({ where: { id: payload.serviceId } });
 
-//     if (!service) {
-//         throw new Error("Service not found");
-//     }
-
-//     return prisma.booking.create({
-//         data: {
-//             customerId,
-//             technicianId: service.technicianId,
-//             serviceId: service.id,
-//             scheduledAt: new Date(payload.scheduledAt),
-//             address: payload.address,
-//             notes: payload.notes,
-//             totalAmount: service.price,
-//             status: "REQUESTED"
-//         },
-//         include: { service: true }
-//     });
-// };
 const createBooking = async (customerId: string, payload: ICreateBooking) => {
     // Input validation
     if (!payload.serviceId || typeof payload.serviceId !== "string") {
@@ -221,56 +213,7 @@ const cancelBooking = async (customerId: string, id: string) => {
     });
 };
 
-// ---------- Reviews ----------
-
-// const createReview = async (customerId: string, payload: ICreateReview) => {
-//     const booking = await prisma.booking.findUnique({
-//         where: { id: payload.bookingId },
-//         include: { review: true }
-//     });
-
-//     if (!booking) {
-//         throw new Error("Booking not found");
-//     }
-//     if (booking.customerId !== customerId) {
-//         throw new Error("You can only review your own bookings");
-//     }
-//     if (booking.status !== "COMPLETED") {
-//         throw new Error("You can only review a completed job");
-//     }
-//     if (booking.review) {
-//         throw new Error("This booking has already been reviewed");
-//     }
-
-//     return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-//         const review = await tx.review.create({
-//             data: {
-
-//                 bookingId: booking.id,
-//                 customerId,
-//                 technicianId: booking.technicianId,
-//                 rating: payload.rating,
-//                 comment: payload.comment
-//             }
-//         });
-
-//         const agg = await tx.review.aggregate({
-//             where: { technicianId: booking.technicianId },
-//             _avg: { rating: true },
-//             _count: { rating: true }
-//         });
-
-//         await tx.technicianProfile.update({
-//             where: { id: booking.technicianId },
-//             data: {
-//                 avgRating: agg._avg.rating ?? payload.rating,
-//                 totalReviews: agg._count.rating
-//             }
-//         });
-
-//         return review;
-//     });
-// };
+//  Reviews 
 
 const createReview = async (customerId: string, payload: ICreateReview) => {
     // Input validation

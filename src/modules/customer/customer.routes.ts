@@ -5,13 +5,13 @@ import { Role } from "@prisma/client";
 
 const router = Router();
 
-// ---------- Public routes (no auth required) ----------
+// Public routes (no auth required) 
 router.get("/services", customerController.getAllServices);
 router.get("/technicians", customerController.getAllTechnicians);
 router.get("/technicians/:id", customerController.getTechnicianById);
 router.get("/categories", customerController.getAllCategories);
 
-// ---------- Protected routes (CUSTOMER only) ----------
+//  Protected routes (CUSTOMER only) 
 router.post("/bookings", auth(Role.CUSTOMER), customerController.createBooking);
 router.get("/bookings", auth(Role.CUSTOMER), customerController.getMyBookings);
 router.get("/bookings/:id", auth(Role.CUSTOMER), customerController.getBookingById);

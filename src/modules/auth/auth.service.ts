@@ -1,6 +1,3 @@
-
-
-
 import bcrypt from "bcryptjs";
 import { JwtPayload } from "jsonwebtoken";
 import { prisma } from "../../lib/prisma";
@@ -113,8 +110,32 @@ const refreshToken = async (token: string) => {
     return { accessToken };
 };
 
+
+const getCurrentUser = async (userId: string) => {
+    const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            role: true,
+            status: true,
+            createdAt: true,
+            updatedAt: true
+        }
+    });
+
+    if (!user) {
+        throw new Error("User not found");
+    }
+
+    return user;
+};
+
 export const authService = {
     registerUser,
     loginUser,
-    refreshToken
+    refreshToken,
+    getCurrentUser
 };

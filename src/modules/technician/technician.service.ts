@@ -30,31 +30,6 @@ const updateProfile = async (userId: string, payload: IUpdateProfile) => {
     });
 };
 
-// const updateAvailability = async (userId: string, payload: IUpdateAvailability) => {
-//     const profile = await getProfileOrThrow(userId);
-
-//     await prisma.$transaction([
-//         prisma.availability.deleteMany({ where: { technicianId: profile.id } }),
-//         prisma.availability.createMany({
-//             data: payload.slots.map((slot) => ({ ...slot, technicianId: profile.id }))
-//         })
-//     ]);
-
-//     return prisma.availability.findMany({ where: { technicianId: profile.id } });
-// };
-
-// const createService = async (userId: string, payload: ICreateService) => {
-//     const profile = await getProfileOrThrow(userId);
-
-//     const category = await prisma.category.findUnique({ where: { id: payload.categoryId } });
-//     if (!category) {
-//         throw new Error("Category does not exist");
-//     }
-
-//     return prisma.service.create({
-//         data: { ...payload, technicianId: profile.id }
-//     });
-// };
 
 const updateAvailability = async (userId: string, payload: IUpdateAvailability) => {
     // Input validation
@@ -150,29 +125,6 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
     IN_PROGRESS: ["COMPLETED"]
 };
 
-// const updateBookingStatus = async (userId: string, bookingId: string, status: string) => {
-//     const profile = await getProfileOrThrow(userId);
-
-//     const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
-//     if (!booking) {
-//         throw new Error("Booking not found");
-//     }
-//     if (booking.technicianId !== profile.id) {
-//         throw new Error("You do not have access to this booking");
-//     }
-
-//     const allowedNext = VALID_TRANSITIONS[booking.status] || [];
-//     if (!allowedNext.includes(status)) {
-//         throw new Error(
-//             `Cannot transition booking from ${booking.status} to ${status}. A booking must be PAID before it can move to IN_PROGRESS.`
-//         );
-//     }
-
-//     return prisma.booking.update({
-//         where: { id: bookingId },
-//         data: { status: status as any }
-//     });
-// };
 
 const updateBookingStatus = async (userId: string, bookingId: string, status: string) => {
     // Input validation

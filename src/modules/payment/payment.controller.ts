@@ -16,7 +16,7 @@ const createPayment = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
-// Stripe webhook — raw body, no auth, mounted separately in app.ts
+// Stripe webhook 
 const stripeWebhook = catchAsync(async (req: Request, res: Response) => {
     const signature = req.headers["stripe-signature"] as string;
     const result = await paymentService.handleStripeWebhook(req.body, signature);

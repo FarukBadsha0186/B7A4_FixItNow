@@ -4,7 +4,7 @@ import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
 import { customerService } from "./customer.service";
 
-// ---------- Public browse ----------
+//  Public browse 
 
 const getAllServices = catchAsync(async (req: Request, res: Response) => {
     const { services, meta } = await customerService.getAllServices(req.query as any);
@@ -53,7 +53,7 @@ const getAllCategories = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
-// ---------- Bookings ----------
+//  Bookings 
 
 const createBooking = catchAsync(async (req: Request, res: Response) => {
     const customerId = req.user!.id;
@@ -106,7 +106,7 @@ const cancelBooking = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
-// ---------- Reviews ----------
+//  Reviews 
 
 const createReview = catchAsync(async (req: Request, res: Response) => {
     const customerId = req.user!.id;

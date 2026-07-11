@@ -5,9 +5,7 @@ import { Role } from "@prisma/client";
 
 const router = Router();
 
-// NOTE: webhook route is NOT here — it's mounted separately in app.ts
-// with express.raw() BEFORE express.json(), since Stripe's signature
-// check requires the untouched raw request body.
+
 
 router.post("/create", auth(Role.CUSTOMER), paymentController.createPayment);
 router.post("/confirm", auth(Role.CUSTOMER), paymentController.confirmPayment);

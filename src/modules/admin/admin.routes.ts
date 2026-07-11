@@ -9,6 +9,7 @@ router.use(auth(Role.ADMIN));
 
 router.get("/users", adminController.getAllUsers);
 router.get("/users/:id", adminController.updateUserStatus);
+router.patch("/users/:id", adminController.updateUserStatus);
 router.get("/bookings", adminController.getAllBookings);
 router.get("/categories", adminController.getAllCategories);
 router.post("/categories", adminController.createCategory);

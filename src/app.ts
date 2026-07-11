@@ -9,7 +9,7 @@ import { adminRoutes } from "./modules/admin/admin.routes";
 import { technicianRoutes } from "./modules/technician/technician.routes";
 import { customerRoutes } from "./modules/customer/customer.routes";
 import { paymentRoutes } from "./modules/payment/payment.routes";
-import { paymentController } from "./modules/payment/payment.controller";
+
 
 const app: Application = express();
 
