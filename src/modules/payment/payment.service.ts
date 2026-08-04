@@ -150,9 +150,12 @@ const createPaymentSession = async (customerId: string, payload: ICreatePayment)
             bookingId: booking.id,
             transactionId
         },
-        success_url: `${config.client_success_url}?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: config.client_cancel_url
+        // success_url: `${config.client_success_url}?session_id={CHECKOUT_SESSION_ID}`,
+        // cancel_url: config.client_cancel_url
+           success_url: `${config.client_success_url}?session_id={CHECKOUT_SESSION_ID}&bookingId=${booking.id}&amount=${booking.totalAmount}`,
+        cancel_url: `${config.client_cancel_url}?bookingId=${booking.id}`
     });
+    
 
     const payment = await prisma.payment.create({
         data: {
