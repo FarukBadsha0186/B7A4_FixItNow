@@ -65,11 +65,30 @@ const updateBookingStatus = catchAsync(async (req: Request, res: Response) => {
         data: booking
     });
 });
+const getMyProfile = catchAsync(async (req: Request, res: Response) => {
+    const userId = req.user!.id;
+    const profile = await technicianService.getMyProfile(userId);
+    sendResponse(res, { success: true, statusCode: httpStatus.OK, message: "Profile fetched successfully", data: profile });
+});
+
+const getAvailability = catchAsync(async (req: Request, res: Response) => {
+    const userId = req.user!.id;
+    const availability = await technicianService.getAvailability(userId);
+
+    sendResponse(res, {
+        success: true,
+        statusCode: httpStatus.OK,
+        message: "Availability fetched successfully",
+        data: availability
+    });
+});
 
 export const technicianController = {
+     getAvailability, 
     updateProfile,
     updateAvailability,
     createService,
     getMyBookings,
-    updateBookingStatus
+    updateBookingStatus,
+    getMyProfile
 };

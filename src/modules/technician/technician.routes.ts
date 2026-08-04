@@ -12,5 +12,7 @@ router.put("/availability", technicianController.updateAvailability);
 router.post("/services", technicianController.createService);
 router.get("/bookings", technicianController.getMyBookings);
 router.patch("/bookings/:id", technicianController.updateBookingStatus);
+router.get("/profile", technicianController.getMyProfile);
 
+router.get("/availability", technicianController.getAvailability);
 export const technicianRoutes = router;

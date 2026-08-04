@@ -124,6 +124,16 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
     PAID: ["IN_PROGRESS"],
     IN_PROGRESS: ["COMPLETED"]
 };
+const getMyProfile = async (userId: string) => {
+    const profile = await prisma.technicianProfile.findUnique({
+        where: { userId },
+        include: { user: { select: { id: true, name: true, email: true, phone: true } } }
+    });
+    if (!profile) {
+        throw new Error("Technician profile not found");
+    }
+    return profile;
+};
 
 
 const updateBookingStatus = async (userId: string, bookingId: string, status: string) => {
@@ -155,10 +165,23 @@ const updateBookingStatus = async (userId: string, bookingId: string, status: st
         data: { status: status as any }
     });
 };
+
+const getAvailability = async (userId: string) => {
+    const profile = await getProfileOrThrow(userId);
+    
+    return prisma.availability.findMany({
+        where: { technicianId: profile.id },
+        orderBy: { dayOfWeek: 'asc' }
+    });
+};
 export const technicianService = {
+     getAvailability, 
     updateProfile,
     updateAvailability,
     createService,
     getMyBookings,
-    updateBookingStatus
+    updateBookingStatus,
+    getMyProfile, 
+
+    
 };
