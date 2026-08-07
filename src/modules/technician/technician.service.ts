@@ -31,58 +31,20 @@ const updateProfile = async (userId: string, payload: IUpdateProfile) => {
 };
 
 
-// const updateAvailability = async (userId: string, payload: IUpdateAvailability) => {
-    
-    
-
-//     const profile = await getProfileOrThrow(userId);
-
-//     // ✅ Transaction with profile update
-//     await prisma.$transaction(async (tx) => {
-//         // Delete old
-//         await tx.availability.deleteMany({ 
-//             where: { technicianId: profile.id } 
-//         });
-
-//         // Create new
-//         if (payload.slots.length > 0) {
-//             await tx.availability.createMany({
-//                 data: payload.slots.map((slot) => ({ 
-//                     ...slot, 
-//                     technicianId: profile.id 
-//                 }))
-//             });
-//         }
-
-    
-//         await tx.technicianProfile.update({
-//             where: { id: profile.id },
-//             data: { isAvailable: payload.slots.length > 0 }
-//         });
-//     });
-
-//     return prisma.availability.findMany({ 
-//         where: { technicianId: profile.id } 
-//     });
-// };
 const updateAvailability = async (userId: string, payload: IUpdateAvailability) => {
-    // ✅ Validate dayOfWeek (0-6)
-    for (const slot of payload.slots) {
-        if (slot.dayOfWeek < 0 || slot.dayOfWeek > 6) {
-            throw new Error(`dayOfWeek must be between 0 (Sunday) and 6 (Saturday), got ${slot.dayOfWeek}`);
-        }
-        if (slot.startTime >= slot.endTime) {
-            throw new Error(`Start time must be before end time for day ${slot.dayOfWeek}`);
-        }
-    }
+    
+    
 
     const profile = await getProfileOrThrow(userId);
 
+    // ✅ Transaction with profile update
     await prisma.$transaction(async (tx) => {
+        // Delete old
         await tx.availability.deleteMany({ 
             where: { technicianId: profile.id } 
         });
 
+        // Create new
         if (payload.slots.length > 0) {
             await tx.availability.createMany({
                 data: payload.slots.map((slot) => ({ 
@@ -92,6 +54,7 @@ const updateAvailability = async (userId: string, payload: IUpdateAvailability) 
             });
         }
 
+    
         await tx.technicianProfile.update({
             where: { id: profile.id },
             data: { isAvailable: payload.slots.length > 0 }
@@ -102,6 +65,7 @@ const updateAvailability = async (userId: string, payload: IUpdateAvailability) 
         where: { technicianId: profile.id } 
     });
 };
+
 
 const createService = async (userId: string, payload: ICreateService) => {
     // Input validation

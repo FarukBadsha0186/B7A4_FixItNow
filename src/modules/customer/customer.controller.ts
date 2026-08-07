@@ -81,6 +81,10 @@ const getMyBookings = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
+
+
+
+
 const getBookingById = catchAsync(async (req: Request, res: Response) => {
     const customerId = req.user!.id;
     const { id } = req.params;
