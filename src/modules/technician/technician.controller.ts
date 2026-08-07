@@ -83,12 +83,29 @@ const getAvailability = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
+const getBookingStats = catchAsync(async (req: Request, res: Response) => {
+    const userId = req.user!.id;
+    const stats = await technicianService.getBookingStats(userId);
+
+    sendResponse(res, {
+        success: true,
+        statusCode: httpStatus.OK,
+        message: "Booking stats fetched successfully",
+        data: stats
+    });
+});
+
+
+
+
 export const technicianController = {
-     getAvailability, 
-    updateProfile,
-    updateAvailability,
-    createService,
-    getMyBookings,
-    updateBookingStatus,
-    getMyProfile
+    getAvailability,      
+    updateProfile,          
+    updateAvailability,     
+    createService,          
+    getMyBookings,          
+    updateBookingStatus,   
+    getMyProfile,           
+    getBookingStats,        
 };
+

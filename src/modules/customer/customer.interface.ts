@@ -7,6 +7,7 @@ export interface IListQuery {
     maxPrice?: string;
     minRating?: string;
     status?: string;
+    search?: string;
 }
 
 export interface ICreateBooking {
@@ -20,4 +21,13 @@ export interface ICreateReview {
     bookingId: string;
     rating: number; // 1-5
     comment?: string;
+}
+
+export interface IAvailableSlots {
+    technicianId: string;
+    date: string;
+    dayOfWeek: number;
+    availableSlots: string[];
+    bookedTimes: string[];
+    totalSlots: number;
 }

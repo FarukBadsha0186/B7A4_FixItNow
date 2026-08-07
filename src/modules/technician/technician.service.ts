@@ -31,40 +31,78 @@ const updateProfile = async (userId: string, payload: IUpdateProfile) => {
 };
 
 
+// const updateAvailability = async (userId: string, payload: IUpdateAvailability) => {
+    
+    
+
+//     const profile = await getProfileOrThrow(userId);
+
+//     // ✅ Transaction with profile update
+//     await prisma.$transaction(async (tx) => {
+//         // Delete old
+//         await tx.availability.deleteMany({ 
+//             where: { technicianId: profile.id } 
+//         });
+
+//         // Create new
+//         if (payload.slots.length > 0) {
+//             await tx.availability.createMany({
+//                 data: payload.slots.map((slot) => ({ 
+//                     ...slot, 
+//                     technicianId: profile.id 
+//                 }))
+//             });
+//         }
+
+    
+//         await tx.technicianProfile.update({
+//             where: { id: profile.id },
+//             data: { isAvailable: payload.slots.length > 0 }
+//         });
+//     });
+
+//     return prisma.availability.findMany({ 
+//         where: { technicianId: profile.id } 
+//     });
+// };
 const updateAvailability = async (userId: string, payload: IUpdateAvailability) => {
-    // Input validation
-    if (!payload.slots || !Array.isArray(payload.slots) || payload.slots.length === 0) {
-        throw new Error("slots must be a non-empty array");
-    }
+    // ✅ Validate dayOfWeek (0-6)
     for (const slot of payload.slots) {
-        if (
-            slot.dayOfWeek === undefined ||
-            typeof slot.dayOfWeek !== "number" ||
-            slot.dayOfWeek < 0 ||
-            slot.dayOfWeek > 6
-        ) {
-            throw new Error("dayOfWeek must be a number between 0 (Sunday) and 6 (Saturday)");
+        if (slot.dayOfWeek < 0 || slot.dayOfWeek > 6) {
+            throw new Error(`dayOfWeek must be between 0 (Sunday) and 6 (Saturday), got ${slot.dayOfWeek}`);
         }
-        const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
-        if (!slot.startTime || !timeRegex.test(slot.startTime)) {
-            throw new Error("startTime must be in HH:mm format (e.g. 09:00)");
-        }
-        if (!slot.endTime || !timeRegex.test(slot.endTime)) {
-            throw new Error("endTime must be in HH:mm format (e.g. 17:00)");
+        if (slot.startTime >= slot.endTime) {
+            throw new Error(`Start time must be before end time for day ${slot.dayOfWeek}`);
         }
     }
 
     const profile = await getProfileOrThrow(userId);
 
-    await prisma.$transaction([
-        prisma.availability.deleteMany({ where: { technicianId: profile.id } }),
-        prisma.availability.createMany({
-            data: payload.slots.map((slot) => ({ ...slot, technicianId: profile.id }))
-        })
-    ]);
+    await prisma.$transaction(async (tx) => {
+        await tx.availability.deleteMany({ 
+            where: { technicianId: profile.id } 
+        });
 
-    return prisma.availability.findMany({ where: { technicianId: profile.id } });
+        if (payload.slots.length > 0) {
+            await tx.availability.createMany({
+                data: payload.slots.map((slot) => ({ 
+                    ...slot, 
+                    technicianId: profile.id 
+                }))
+            });
+        }
+
+        await tx.technicianProfile.update({
+            where: { id: profile.id },
+            data: { isAvailable: payload.slots.length > 0 }
+        });
+    });
+
+    return prisma.availability.findMany({ 
+        where: { technicianId: profile.id } 
+    });
 };
+
 const createService = async (userId: string, payload: ICreateService) => {
     // Input validation
     if (!payload.title || payload.title.trim().length < 3) {
@@ -174,14 +212,41 @@ const getAvailability = async (userId: string) => {
         orderBy: { dayOfWeek: 'asc' }
     });
 };
+
+
+// ✅ Add this function after getMyBookings
+const getBookingStats = async (userId: string) => {
+    const profile = await getProfileOrThrow(userId);
+
+    const bookings = await prisma.booking.findMany({
+        where: { technicianId: profile.id }
+    });
+
+    return {
+        total: bookings.length,
+        requested: bookings.filter(b => b.status === 'REQUESTED').length,
+        accepted: bookings.filter(b => b.status === 'ACCEPTED').length,
+        inProgress: bookings.filter(b => b.status === 'IN_PROGRESS').length,
+        completed: bookings.filter(b => b.status === 'COMPLETED').length,
+        cancelled: bookings.filter(b => b.status === 'CANCELLED').length,
+        declined: bookings.filter(b => b.status === 'DECLINED').length
+    };
+};
+
+
+
+
 export const technicianService = {
      getAvailability, 
     updateProfile,
-    updateAvailability,
+      updateAvailability,
     createService,
     getMyBookings,
     updateBookingStatus,
     getMyProfile, 
+    getBookingStats, 
 
     
 };
+
+

@@ -3,6 +3,7 @@ import httpStatus from "http-status";
 import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
 import { customerService } from "./customer.service";
+import { prisma } from "../../lib/prisma"; 
 
 //  Public browse 
 
@@ -55,17 +56,17 @@ const getAllCategories = catchAsync(async (req: Request, res: Response) => {
 
 //  Bookings 
 
-const createBooking = catchAsync(async (req: Request, res: Response) => {
-    const customerId = req.user!.id;
-    const booking = await customerService.createBooking(customerId, req.body);
+// const createBooking = catchAsync(async (req: Request, res: Response) => {
+//     const customerId = req.user!.id;
+//     const booking = await customerService.createBooking(customerId, req.body);
 
-    sendResponse(res, {
-        success: true,
-        statusCode: httpStatus.CREATED,
-        message: "Booking created successfully",
-        data: booking
-    });
-});
+//     sendResponse(res, {
+//         success: true,
+//         statusCode: httpStatus.CREATED,
+//         message: "Booking created successfully",
+//         data: booking
+//     });
+// });
 
 const getMyBookings = catchAsync(async (req: Request, res: Response) => {
     const customerId = req.user!.id;
@@ -120,6 +121,114 @@ const createReview = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
+// const getAvailableSlots = catchAsync(async (req: Request, res: Response) => {
+//     const { technicianId, date } = req.query;
+    
+//     if (!technicianId || typeof technicianId !== "string") {
+//         throw new Error("technicianId is required");
+//     }
+//     if (!date || typeof date !== "string") {
+//         throw new Error("date is required (YYYY-MM-DD)");
+//     }
+
+//     const slots = await customerService.getAvailableSlots(technicianId, date);
+
+//     sendResponse(res, {
+//         success: true,
+//         statusCode: httpStatus.OK,
+//         message: "Available slots fetched successfully",
+//         data: slots
+//     });
+// });
+
+
+
+const createBooking = catchAsync(async (req: Request, res: Response) => {
+    const customerId = req.user!.id;
+    const booking = await customerService.createBooking(customerId, req.body);
+
+    sendResponse(res, {
+        success: true,
+        statusCode: httpStatus.CREATED,
+        message: "Booking created successfully",
+        data: booking
+    });
+});
+
+
+const getAvailableSlots = catchAsync(async (req: Request, res: Response) => {
+    const { technicianId, date } = req.query;
+    
+    if (!technicianId || typeof technicianId !== "string") {
+        throw new Error("technicianId is required");
+    }
+    if (!date || typeof date !== "string") {
+        throw new Error("date is required (YYYY-MM-DD)");
+    }
+
+    const slots = await customerService.getAvailableSlots(technicianId, date);
+
+    sendResponse(res, {
+        success: true,
+        statusCode: httpStatus.OK,
+        message: "Available slots fetched successfully",
+        data: slots
+    });
+});
+
+
+
+
+
+
+const getCategoryById = catchAsync(async (req: Request, res: Response) => {
+    const id = req.params.id as string;
+    
+    if (!id) {
+        return sendResponse(res, {
+            success: false,
+            statusCode: httpStatus.BAD_REQUEST,
+            message: "Category ID is required",
+            data: null
+        });
+    }
+    
+    const category = await prisma.category.findUnique({
+        where: { id },
+        include: {
+            services: {
+                include: {
+                    technician: {
+                        include: {
+                            user: { select: { id: true, name: true, email: true } }
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    if (!category) {
+        return sendResponse(res, {
+            success: false,
+            statusCode: httpStatus.NOT_FOUND,
+            message: "Category not found",
+            data: null
+        });
+    }
+
+    sendResponse(res, {
+        success: true,
+        statusCode: httpStatus.OK,
+        message: "Category fetched successfully",
+        data: category
+    });
+});
+
+
+
+
+
 export const customerController = {
     getAllServices,
     getAllTechnicians,
@@ -129,5 +238,7 @@ export const customerController = {
     getMyBookings,
     getBookingById,
     cancelBooking,
-    createReview
+    createReview,
+    getAvailableSlots,
+    getCategoryById,
 };

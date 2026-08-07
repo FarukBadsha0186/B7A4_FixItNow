@@ -13,12 +13,56 @@ const getPagination = (query: IListQuery) => {
 //  Public browse 
 
 
+// const getAllServices = async (query: IListQuery) => {
+//     const { page, limit, skip } = getPagination(query);
+
+//     const where: Record<string, unknown> = {};
+
+//     // "type" filter — maps to categoryId (category IS the service type: plumbing, electrical, etc.)
+//     if (query.categoryId) where.categoryId = query.categoryId;
+
+//     if (query.minPrice || query.maxPrice) {
+//         where.price = {
+//             ...(query.minPrice ? { gte: parseFloat(query.minPrice) } : {}),
+//             ...(query.maxPrice ? { lte: parseFloat(query.maxPrice) } : {})
+//         };
+//     }
+
+//     // "location" filter — via the technician offering the service
+//     // "rating" filter — via the technician's average rating
+//     const technicianFilter: Record<string, unknown> = {};
+//     if (query.location) {
+//         technicianFilter.location = { contains: query.location, mode: "insensitive" };
+//     }
+//     if (query.minRating) {
+//         technicianFilter.avgRating = { gte: parseFloat(query.minRating) };
+//     }
+//     if (Object.keys(technicianFilter).length > 0) {
+//         where.technician = technicianFilter;
+//     }
+
+//     const [services, total] = await Promise.all([
+//         prisma.service.findMany({
+//             where,
+//             include: {
+//                 category: true,
+//                 technician: { include: { user: { select: { id: true, name: true } } } }
+//             },
+//             skip,
+//             take: limit,
+//             orderBy: { createdAt: "desc" }
+//         }),
+//         prisma.service.count({ where })
+//     ]);
+
+//     return { services, meta: { total, page, limit, totalPages: Math.ceil(total / limit) || 1 } };
+// };
+
 const getAllServices = async (query: IListQuery) => {
     const { page, limit, skip } = getPagination(query);
 
     const where: Record<string, unknown> = {};
 
-    // "type" filter — maps to categoryId (category IS the service type: plumbing, electrical, etc.)
     if (query.categoryId) where.categoryId = query.categoryId;
 
     if (query.minPrice || query.maxPrice) {
@@ -28,8 +72,6 @@ const getAllServices = async (query: IListQuery) => {
         };
     }
 
-    // "location" filter — via the technician offering the service
-    // "rating" filter — via the technician's average rating
     const technicianFilter: Record<string, unknown> = {};
     if (query.location) {
         technicianFilter.location = { contains: query.location, mode: "insensitive" };
@@ -41,12 +83,24 @@ const getAllServices = async (query: IListQuery) => {
         where.technician = technicianFilter;
     }
 
+    // ✅ ADD SEARCH - NEW
+    if (query.search) {
+        where.OR = [
+            { title: { contains: query.search, mode: "insensitive" } },
+            { technician: { user: { name: { contains: query.search, mode: "insensitive" } } } }
+        ];
+    }
+
     const [services, total] = await Promise.all([
         prisma.service.findMany({
             where,
             include: {
                 category: true,
-                technician: { include: { user: { select: { id: true, name: true } } } }
+                technician: { 
+                    include: { 
+                        user: { select: { id: true, name: true, image: true } } 
+                    } 
+                }
             },
             skip,
             take: limit,
@@ -57,6 +111,7 @@ const getAllServices = async (query: IListQuery) => {
 
     return { services, meta: { total, page, limit, totalPages: Math.ceil(total / limit) || 1 } };
 };
+
 
 const getAllTechnicians = async (query: IListQuery) => {
     const { page, limit, skip } = getPagination(query);
@@ -113,41 +168,41 @@ const getAllCategories = async () => {
 //  Bookings 
 
 
-const createBooking = async (customerId: string, payload: ICreateBooking) => {
-    // Input validation
-    if (!payload.serviceId || typeof payload.serviceId !== "string") {
-        throw new Error("serviceId is required");
-    }
-    if (!payload.scheduledAt || isNaN(Date.parse(payload.scheduledAt))) {
-        throw new Error("scheduledAt must be a valid date");
-    }
-    if (new Date(payload.scheduledAt) < new Date()) {
-        throw new Error("scheduledAt must be a future date");
-    }
-    if (!payload.address || payload.address.trim().length < 5) {
-        throw new Error("address is required and must be at least 5 characters");
-    }
+// const createBooking = async (customerId: string, payload: ICreateBooking) => {
+//     // Input validation
+//     if (!payload.serviceId || typeof payload.serviceId !== "string") {
+//         throw new Error("serviceId is required");
+//     }
+//     if (!payload.scheduledAt || isNaN(Date.parse(payload.scheduledAt))) {
+//         throw new Error("scheduledAt must be a valid date");
+//     }
+//     if (new Date(payload.scheduledAt) < new Date()) {
+//         throw new Error("scheduledAt must be a future date");
+//     }
+//     if (!payload.address || payload.address.trim().length < 5) {
+//         throw new Error("address is required and must be at least 5 characters");
+//     }
 
-    const service = await prisma.service.findUnique({ where: { id: payload.serviceId } });
+//     const service = await prisma.service.findUnique({ where: { id: payload.serviceId } });
 
-    if (!service) {
-        throw new Error("Service not found");
-    }
+//     if (!service) {
+//         throw new Error("Service not found");
+//     }
 
-    return prisma.booking.create({
-        data: {
-            customerId,
-            technicianId: service.technicianId,
-            serviceId: service.id,
-            scheduledAt: new Date(payload.scheduledAt),
-            address: payload.address,
-            notes: payload.notes,
-            totalAmount: service.price,
-            status: "REQUESTED"
-        },
-        include: { service: true }
-    });
-};
+//     return prisma.booking.create({
+//         data: {
+//             customerId,
+//             technicianId: service.technicianId,
+//             serviceId: service.id,
+//             scheduledAt: new Date(payload.scheduledAt),
+//             address: payload.address,
+//             notes: payload.notes,
+//             totalAmount: service.price,
+//             status: "REQUESTED"
+//         },
+//         include: { service: true }
+//     });
+// };
 
 
 const getMyBookings = async (customerId: string, query: IListQuery) => {
@@ -276,6 +331,195 @@ const createReview = async (customerId: string, payload: ICreateReview) => {
     });
 };
 
+// ✅ NEW: Check technician availability
+const checkTechnicianAvailability = async (technicianId: string, scheduledAt: Date) => {
+    const dayOfWeek = new Date(scheduledAt).getDay(); // 0=Sunday
+    const time = scheduledAt.toTimeString().slice(0, 5); // "HH:MM"
+
+    // 1. Check if technician has availability slot for this day and time
+    const availability = await prisma.availability.findFirst({
+        where: {
+            technicianId: technicianId,
+            dayOfWeek: dayOfWeek,
+            AND: [
+                { startTime: { lte: time } },
+                { endTime: { gte: time } }
+            ]
+        }
+    });
+
+    if (!availability) {
+        throw new Error(`Technician is not available at ${time} on this day`);
+    }
+
+    // 2. Check if already booked (overlap)
+    const existingBooking = await prisma.booking.findFirst({
+        where: {
+            technicianId: technicianId,
+            scheduledAt: scheduledAt,
+            status: { 
+                notIn: ['CANCELLED', 'DECLINED', 'COMPLETED'] 
+            }
+        }
+    });
+
+    if (existingBooking) {
+        throw new Error("This time slot is already booked");
+    }
+
+    return true;
+};
+
+// ✅ UPDATED: Create Booking with availability check
+const createBooking = async (customerId: string, payload: ICreateBooking) => {
+    // Input validation
+    if (!payload.serviceId || typeof payload.serviceId !== "string") {
+        throw new Error("serviceId is required");
+    }
+    if (!payload.scheduledAt || isNaN(Date.parse(payload.scheduledAt))) {
+        throw new Error("scheduledAt must be a valid date");
+    }
+    
+    const scheduledDate = new Date(payload.scheduledAt);
+    if (scheduledDate < new Date()) {
+        throw new Error("scheduledAt must be a future date");
+    }
+    if (!payload.address || payload.address.trim().length < 5) {
+        throw new Error("address is required and must be at least 5 characters");
+    }
+
+    // Get service with technician
+    const service = await prisma.service.findUnique({ 
+        where: { id: payload.serviceId },
+        include: { technician: true }
+    });
+
+    if (!service) {
+        throw new Error("Service not found");
+    }
+
+    // ✅ CHECK AVAILABILITY BEFORE CREATING BOOKING
+    await checkTechnicianAvailability(service.technicianId, scheduledDate);
+
+    // Create booking
+    return prisma.booking.create({
+        data: {
+            customerId,
+            technicianId: service.technicianId,
+            serviceId: service.id,
+            scheduledAt: scheduledDate,
+            address: payload.address,
+            notes: payload.notes || null,
+            totalAmount: service.price,
+            status: "REQUESTED"
+        },
+        include: { 
+            service: true,
+            technician: {
+                include: { user: { select: { id: true, name: true } } }
+            }
+        }
+    });
+};
+
+// ✅ NEW: Get available slots for a technician
+const getAvailableSlots = async (technicianId: string, date: string) => {
+    const dayOfWeek = new Date(date).getDay();
+    
+    // Get technician's availability for that day
+    const availability = await prisma.availability.findMany({
+        where: {
+            technicianId: technicianId,
+            dayOfWeek: dayOfWeek
+        },
+        orderBy: { startTime: 'asc' }
+    });
+
+    if (availability.length === 0) {
+        return { availableSlots: [], message: "No availability set for this day" };
+    }
+
+    // Get already booked slots for that day
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const bookings = await prisma.booking.findMany({
+        where: {
+            technicianId: technicianId,
+            scheduledAt: {
+                gte: startOfDay,
+                lte: endOfDay
+            },
+            status: { 
+                notIn: ['CANCELLED', 'DECLINED', 'COMPLETED'] 
+            }
+        }
+    });
+
+    const bookedTimes = bookings.map(b => 
+        b.scheduledAt.toTimeString().slice(0, 5)
+    );
+
+    // Generate available slots (30 min intervals)
+    const availableSlots = [];
+    for (const slot of availability) {
+        let current = slot.startTime;
+        while (current < slot.endTime) {
+            if (!bookedTimes.includes(current)) {
+                availableSlots.push(current);
+            }
+            // Add 30 minutes
+            const [hours, minutes] = current.split(':').map(Number);
+            const newMinutes = minutes + 30;
+            if (newMinutes >= 60) {
+                current = `${String(hours + 1).padStart(2, '0')}:${String(newMinutes - 60).padStart(2, '0')}`;
+            } else {
+                current = `${String(hours).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')}`;
+            }
+        }
+    }
+
+    return {
+        technicianId,
+        date,
+        dayOfWeek,
+        availableSlots,
+        bookedTimes,
+        totalSlots: availableSlots.length
+    };
+};
+
+
+
+// ✅ Add this function
+const getCategoryById = async (id: string) => {
+    const category = await prisma.category.findUnique({
+        where: { id },
+        include: {
+            services: {
+                include: {
+                    technician: {
+                        include: {
+                            user: { select: { id: true, name: true, email: true } }
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    if (!category) {
+        throw new Error("Category not found");
+    }
+
+    return category;
+};
+
+
+
+
 
 export const customerService = {
     getAllServices,
@@ -286,5 +530,9 @@ export const customerService = {
     getMyBookings,
     getBookingById,
     cancelBooking,
-    createReview
+    createReview,
+    getAvailableSlots,  
+    checkTechnicianAvailability, 
+    getCategoryById,
+
 };

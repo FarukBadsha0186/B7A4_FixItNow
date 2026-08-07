@@ -10,6 +10,7 @@ export interface IAvailabilitySlot {
     dayOfWeek: number; // 0 = Sunday ... 6 = Saturday
     startTime: string; // "09:00"
     endTime: string;   // "17:00"
+    
 }
 
 export interface IUpdateAvailability {
@@ -31,4 +32,14 @@ export interface IListQuery {
     page?: string;
     limit?: string;
     status?: string;
+}
+
+export interface IBookingStats {
+    total: number;
+    requested: number;
+    accepted: number;
+    inProgress: number;
+    completed: number;
+    cancelled: number;
+    declined: number;
 }
