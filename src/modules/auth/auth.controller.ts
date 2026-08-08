@@ -55,7 +55,7 @@ const refreshToken = catchAsync(async (req: Request, res: Response) => {
         httpOnly: true,
         secure: false,
         sameSite: "none",
-        maxAge: 1000 * 60 * 60 * 24
+      //  maxAge: 1000 * 60 * 60 * 24
     });
 
     sendResponse(res, {
