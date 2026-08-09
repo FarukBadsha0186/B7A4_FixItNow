@@ -32,6 +32,8 @@ export interface IListQuery {
     page?: string;
     limit?: string;
     status?: string;
+    categoryName?: string
+
 }
 
 export interface IBookingStats {

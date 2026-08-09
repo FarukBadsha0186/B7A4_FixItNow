@@ -200,6 +200,43 @@ const getBookingStats = async (userId: string) => {
 
 
 
+const getMyServices = async (userId: string, query: IListQuery) => {
+    const profile = await getProfileOrThrow(userId);
+    const { page, limit, skip } = getPagination(query);
+
+    const where: Record<string, unknown> = { technicianId: profile.id };
+    
+    // যদি category name দিয়ে filter করতে চায়
+    if (query.categoryName) {
+        where.category = {
+            name: {
+                contains: query.categoryName,
+                mode: "insensitive"
+            }
+        };
+    }
+
+    const [services, total] = await Promise.all([
+        prisma.service.findMany({
+            where,
+            include: {
+                category: true  // ✅ Category details সহ
+            },
+            skip,
+            take: limit,
+            orderBy: { createdAt: "desc" }
+        }),
+        prisma.service.count({ where })
+    ]);
+
+    return {
+        services,
+        meta: { total, page, limit, totalPages: Math.ceil(total / limit) || 1 }
+    };
+};
+
+
+
 export const technicianService = {
      getAvailability, 
     updateProfile,
@@ -209,6 +246,9 @@ export const technicianService = {
     updateBookingStatus,
     getMyProfile, 
     getBookingStats, 
+    getMyServices,
+    
+    
 
     
 };

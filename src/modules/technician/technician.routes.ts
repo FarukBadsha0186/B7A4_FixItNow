@@ -15,6 +15,9 @@ router.get("/bookings", technicianController.getMyBookings);
 router.patch("/bookings/:id", technicianController.updateBookingStatus);
 router.get("/profile", technicianController.getMyProfile);
 
+
+router.get("/my-services", technicianController.getMyServices);
+
 router.get("/availability", technicianController.getAvailability);
 
 

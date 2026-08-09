@@ -97,6 +97,20 @@ const getBookingStats = catchAsync(async (req: Request, res: Response) => {
 
 
 
+const getMyServices = catchAsync(async (req: Request, res: Response) => {
+    const userId = req.user!.id;
+    const { services, meta } = await technicianService.getMyServices(userId, req.query as any);
+
+    sendResponse(res, {
+        success: true,
+        statusCode: httpStatus.OK,
+        message: "Services fetched successfully",
+        data: services,
+        meta
+    });
+});
+
+
 
 export const technicianController = {
     getAvailability,      
@@ -106,6 +120,7 @@ export const technicianController = {
     getMyBookings,          
     updateBookingStatus,   
     getMyProfile,           
-    getBookingStats,        
+    getBookingStats, 
+    getMyServices       
 };
 
