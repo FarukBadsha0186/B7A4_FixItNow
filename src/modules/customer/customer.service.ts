@@ -98,7 +98,7 @@ const getAllServices = async (query: IListQuery) => {
                 category: true,
                 technician: { 
                     include: { 
-                        user: { select: { id: true, name: true, image: true } } 
+                        user: { select: { id: true, name: true,} } 
                     } 
                 }
             },
