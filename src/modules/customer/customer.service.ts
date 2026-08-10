@@ -113,23 +113,87 @@ const getAllServices = async (query: IListQuery) => {
 };
 
 
+// const getAllTechnicians = async (query: IListQuery) => {
+//     const { page, limit, skip } = getPagination(query);
+
+//     const where: Record<string, unknown> = {};
+//     if (query.location) {
+//         where.location = { contains: query.location, mode: "insensitive" };
+//     }
+//     if (query.minRating) {
+//         where.avgRating = { gte: parseFloat(query.minRating) };
+//     }
+
+//     const [technicians, total] = await Promise.all([
+//         prisma.technicianProfile.findMany({
+//             where,
+//             include: {
+//                 user: { select: { id: true, name: true, email: true } },
+//                 services: true
+//             },
+//             skip,
+//             take: limit,
+//             orderBy: { avgRating: "desc" }
+//         }),
+//         prisma.technicianProfile.count({ where })
+//     ]);
+
+//     return { technicians, meta: { total, page, limit, totalPages: Math.ceil(total / limit) || 1 } };
+// };
+
+
+
 const getAllTechnicians = async (query: IListQuery) => {
     const { page, limit, skip } = getPagination(query);
-
     const where: Record<string, unknown> = {};
+
+    // Location filter
     if (query.location) {
         where.location = { contains: query.location, mode: "insensitive" };
     }
+
+    // Rating filter
     if (query.minRating) {
         where.avgRating = { gte: parseFloat(query.minRating) };
     }
+
+    // Category & Price filters via services
+    const serviceFilter: Record<string, unknown> = {};
+
+    if (query.categoryId) {
+        serviceFilter.categoryId = query.categoryId;
+    }
+
+    if (query.minPrice || query.maxPrice) {
+        serviceFilter.price = {
+            ...(query.minPrice ? { gte: parseFloat(query.minPrice) } : {}),
+            ...(query.maxPrice ? { lte: parseFloat(query.maxPrice) } : {})
+        };
+    }
+
+    // Apply service filters if any
+    if (Object.keys(serviceFilter).length > 0) {
+        where.services = {
+            some: serviceFilter
+        };
+    }
+
+    // ⬇️ ADD THESE 6 LINES BELOW ⬇️
+    if (query.search) {
+        where.user = {
+            name: { contains: query.search, mode: "insensitive" }
+        };
+    }
+    // ⬆️ ADD THESE 6 LINES ABOVE ⬆️
 
     const [technicians, total] = await Promise.all([
         prisma.technicianProfile.findMany({
             where,
             include: {
                 user: { select: { id: true, name: true, email: true } },
-                services: true
+                services: {
+                    include: { category: true }
+                }
             },
             skip,
             take: limit,
@@ -140,7 +204,6 @@ const getAllTechnicians = async (query: IListQuery) => {
 
     return { technicians, meta: { total, page, limit, totalPages: Math.ceil(total / limit) || 1 } };
 };
-
 const getTechnicianById = async (id: string) => {
     const technician = await prisma.technicianProfile.findUnique({
         where: { id },
